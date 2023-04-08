@@ -28,7 +28,13 @@ hold on
 scatter(citiesLat,citiesLon,'Filled')
 
 [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities);
-[list, index] = reproduction_probability(dist, chromosome);
+[probability] = selection_probability(dist, nPopulation, chromosome);
+
+mate = [];
+for i = 1:5
+    [mate] = [mate; randsample(1:nPopulation, 2, true, probability(:,1))];
+end
+
 
 % Function definitions:
 function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities)
@@ -40,11 +46,16 @@ function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulati
     dist = sum(dist_mx, 2);
 end
 
-function [list, index] = reproduction_probability(dist, chromosome)
+function [probability] = selection_probability(dist, nPopulation, chromosome)
     list = [dist, chromosome];
-    [list, index] = sortrows(list,1);
-    list = [index, list, [1:length(dist)]'];
+    list = sortrows(list, 1, 'descend');
+    rank_sum = nPopulation .* (nPopulation + 1) ./ 2;
+    probability = (1:nPopulation) / rank_sum;
+    probability = [probability', list];
 end
+
+
+
 
 
 
