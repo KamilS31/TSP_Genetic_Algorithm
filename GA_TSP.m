@@ -38,6 +38,7 @@ end
 [cros, tablica, tablica2] = crossover(mate, probability, nCities);
 
 % Function definitions:
+% I
 function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities)
     dist_mx = zeros(nPopulation, nCities);
     for i = 1:nPopulation
@@ -47,6 +48,7 @@ function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulati
     dist = sum(dist_mx, 2);
 end
 
+% II
 function [probability] = selection_probability(dist, nPopulation, chromosome)
     list = [dist, chromosome];
     list = sortrows(list, 1, 'descend');
@@ -55,18 +57,23 @@ function [probability] = selection_probability(dist, nPopulation, chromosome)
     probability = [probability', list];
 end
 
+% III
 function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
 
-    [cros] = [probability(mate(1:end,1),3:end); probability(mate(1:end,2),3:end)];
+%     [cros] = [probability(mate(:,1),3:end); probability(mate(:,2),3:end)]; %uwaga: gdy zamiast : damy 1:end przejdzie po kolumnach, a my chcemy po wierszach
+    cros = [];
+    for i = 1:size(mate,1)
+        [cros] = [cros; probability(mate(i,1),3:end); probability(mate(i,2),3:end)];
+    end
+
     start = randi(nCities); % random start point
     dl = randi([0,nCities - start]); % random number of indexes to take, 0 or sth.
-
     for i = start:start+dl
-        temp = cros(1:2:end,i); % value of first vector
+        temp = cros(1:2:end,i);
         cros(1:2:end,i) = cros(2:2:end,i);
         cros(2:2:end,i) = temp;
     end
-
+    
     disp(start)
     disp(dl)
     disp('----------')
@@ -100,7 +107,7 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
             tablica2{k} = {};
         end
     end
-
+    disp(cros)
     for i = 1:length(tablica)
         for j = 1:length(tablica{i}(:))
             temp = cros(2.*i-1, tablica{i}(j));
