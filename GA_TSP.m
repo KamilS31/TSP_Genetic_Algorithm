@@ -1,6 +1,6 @@
 close all; clc; clear;
 load('usborder.mat','x','y','xx','yy');
-nCities = 5;  % O(N^2)
+nCities = 10;  % O(N^2)
 citiesLat = zeros(nCities,1);
 citiesLon = citiesLat;
 order = 1:nCities;
@@ -35,7 +35,7 @@ for i = 1:nPopulation
     [mate] = [mate; randsample(1:nPopulation, 2, true, probability(:,1))];
 end
 
-[cros,y,z] = crossover(mate, probability, nCities);
+[cros, tablica, tablica2] = crossover(mate, probability, nCities);
 
 % Function definitions:
 function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities)
@@ -55,39 +55,57 @@ function [probability] = selection_probability(dist, nPopulation, chromosome)
     probability = [probability', list];
 end
 
-function [cros,y,z] = crossover(mate, probability, nCities)
-    [cros] = [probability(mate(1,1),3:end); probability(mate(1,2),3:end)];
+function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
+
+    [cros] = [probability(mate(1:end,1),3:end); probability(mate(1:end,2),3:end)];
     start = randi(nCities); % random start point
     dl = randi([0,nCities - start]); % random number of indexes to take, 0 or sth.
+
     for i = start:start+dl
-        temp = cros(1,i); % value of first vector
-        cros(1,i) = cros(2,i);
-        cros(2,i) = temp;
+        temp = cros(1:2:end,i); % value of first vector
+        cros(1:2:end,i) = cros(2:2:end,i);
+        cros(2:2:end,i) = temp;
     end
+
     disp(start)
     disp(dl)
     disp('----------')
-    T1 = [cros(1,1:start-1), zeros(1,length(start:start+dl)), cros(1,start+dl+1:end)];
-    y = [];
-    for j = start:start+dl
-        [y] = [y, find(T1(1,:) == cros(1,j))];
-    end
-    szukana = start:start+dl;
-    temp = cros(2, szukana);
-    cros(2, szukana) = 0;
-    z = [];
-    for k = temp
-        [z] = [z, find(cros(2,:) == k)];
-    end
-    cros(2, szukana) = temp;
 
-    temp = cros(1,y); 
-    cros(1,y) = cros(2,z);
-    cros(2,z) = temp;
+    T1 = [cros(1:2:end,1:start-1), zeros(length(cros(1:2:end,1)),length(start:start+dl)), cros(1:2:end,start+dl+1:end)];
+    tablica = cell(length(T1), 1);
+    for k = 1:length(T1)
+        idx = [];
+        for j = start:start+dl
+            [idx] = [idx, find(T1(k,:) == cros(2.*k-1,j))];
+        end
+
+        if ~isempty(idx)
+            tablica{k} = idx;
+        elseif isempty(idx) && isempty(tablica{k})
+            tablica{k} = {};
+        end
+    end
+
+    T2 = [cros(2:2:end,1:start-1), zeros(length(cros(2:2:end,1)),length(start:start+dl)), cros(2:2:end,start+dl+1:end)];
+    tablica2 = cell(length(T2), 1);
+    for k = 1:length(T2)
+        idx2 = [];
+        for j = start:start+dl
+            [idx2] = [idx2, find(T2(k,:) == cros(2.*k,j))];
+        end
+
+        if ~isempty(idx2)
+            tablica2{k} = idx2;
+        elseif isempty(idx2) && isempty(tablica2{k})
+            tablica2{k} = {};
+        end
+    end
+
+    for i = 1:length(tablica)
+        for j = 1:length(tablica{i}(:))
+            temp = cros(2.*i-1, tablica{i}(j));
+            cros(2.*i-1, tablica{i}(j)) = cros(2.*i, tablica2{i}(j));
+            cros(2.*i, tablica2{i}(j)) = temp;
+        end
+    end
 end
-
-
-
-
-
-
