@@ -23,9 +23,6 @@ while (n <= nCities)
         n = n+1;
     end
 end
-plot(214*x,300*y)
-hold on
-scatter(citiesLat,citiesLon,'Filled')
 
 [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities);
 [probability] = selection_probability(dist, nPopulation, chromosome);
@@ -36,6 +33,26 @@ for i = 1:nPopulation
 end
 
 [cros, tablica, tablica2] = crossover(mate, probability, nCities);
+[cors_mutation] = mutation(cros, nCities);
+
+[cities] = [citiesLat'; citiesLon'];
+for j = 1:length(cors_mutation)
+    clf;
+    plot(214*x,300*y)
+    hold on
+    scatter(citiesLat,citiesLon,'Filled')
+    for k = 2:nCities
+        hold on
+        plot([cities(1,cors_mutation(j,k-1)), cities(1,cors_mutation(j,k))], ...
+            [cities(2,cors_mutation(j,k-1)), cities(2,cors_mutation(j,k))], 'b-');
+        drawnow;
+        pause(0.01);
+    end
+    plot([cities(1,cors_mutation(j,end)), cities(1,cors_mutation(j,1))], ...
+            [cities(2,cors_mutation(j,end)), cities(2,cors_mutation(j,1))], 'b-')
+    drawnow;
+    hold off;
+end
 
 % Function definitions:
 % I
@@ -60,7 +77,6 @@ end
 % III
 function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
 
-%     [cros] = [probability(mate(:,1),3:end); probability(mate(:,2),3:end)]; %uwaga: gdy zamiast : damy 1:end przejdzie po kolumnach, a my chcemy po wierszach
     cros = [];
     for i = 1:size(mate,1)
         [cros] = [cros; probability(mate(i,1),3:end); probability(mate(i,2),3:end)];
@@ -113,6 +129,31 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
             temp = cros(2.*i-1, tablica{i}(j));
             cros(2.*i-1, tablica{i}(j)) = cros(2.*i, tablica2{i}(j));
             cros(2.*i, tablica2{i}(j)) = temp;
+        end
+    end
+end
+
+% IV
+function [cros_mutation] = mutation(cros, nCities)
+    prob_m = 1/nCities;
+    cros_mutation = [];
+    rng('shuffle');
+    for i = 1:length(cros)
+        if rand() <= prob_m 
+            locus1 = randi(nCities);
+            locus2 = randi(nCities);
+            while locus2 == locus1
+                locus2 = randi(nCities);
+            end
+            disp([locus1, locus2])
+            temp = cros(i,locus1);
+            cros(i,locus1) = cros(i,locus2);
+            cros(i,locus2) = temp;
+            [cros_mutation] = [cros_mutation; cros(i,:)];
+        else
+            disp('no mutation')
+            [cros_mutation] = [cros_mutation; cros(i,:)];
+            continue
         end
     end
 end
