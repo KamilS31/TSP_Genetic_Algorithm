@@ -5,13 +5,7 @@ citiesLat = zeros(nCities,1);
 citiesLon = citiesLat;
 order = 1:nCities;
 nPopulation = 20; % population size
-
-% generating an initial population
-chromosome = zeros(nPopulation, nCities);
-for i = 1:nPopulation
-    perm = randperm(length(order));
-    chromosome(i,:) = order(perm);
-end
+iterations = 5000;
 
 n = 1;
 while (n <= nCities)
@@ -24,36 +18,75 @@ while (n <= nCities)
     end
 end
 
+% generating an initial population
+chromosome = zeros(nPopulation, nCities);
+for i = 1:nPopulation
+    perm = randperm(length(order));
+    chromosome(i,:) = order(perm);
+end
+
 [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities);
 [probability] = selection_probability(dist, nPopulation, chromosome);
+[bestOffsprings] = probability(end,2:end); % Best offspring from every iteration
 
-mate = [];
-for i = 1:nPopulation
-    [mate] = [mate; randsample(1:nPopulation, 2, true, probability(:,1))];
+for k=1:iterations
+    
+    mate = [];
+    for i = 1:round(nPopulation/2) 
+        [mate] = [mate; randsample(1:nPopulation, 2, true, probability(:,1))];
+    end
+    
+    [cros, tablica, tablica2] = crossover(mate, probability, nCities);
+    [chromosome_mut] = mutation(cros, nCities);
+    [dist] = objective_function(citiesLat, citiesLon, chromosome_mut, nPopulation, nCities);
+    TEMP = [dist, chromosome_mut];
+    [min_value, min_index] = min(TEMP(:,1));
+    [bestOffsprings] = [bestOffsprings; TEMP(min_index,:)];
+
 end
 
-[cros, tablica, tablica2] = crossover(mate, probability, nCities);
-[cors_mutation] = mutation(cros, nCities);
+[bestOffsprings] = sortrows(bestOffsprings, -1);
+
+% Drawing lines between points
+% [cities] = [citiesLat'; citiesLon'];
+% for j = 1:length(bestOffsprings)
+%     clf;
+%     plot(214*x,300*y)
+%     hold on
+%     scatter(citiesLat,citiesLon,'Filled')
+%     for k = 3:nCities+1
+%         hold on
+%         plot([cities(1,bestOffsprings(j,k-1)), cities(1,bestOffsprings(j,k))], ...
+%             [cities(2,bestOffsprings(j,k-1)), cities(2,bestOffsprings(j,k))], 'b-');
+%         drawnow;
+%         pause(0.01);
+%     end
+%     plot([cities(1,bestOffsprings(j,end)), cities(1,bestOffsprings(j,2))], ...
+%             [cities(2,bestOffsprings(j,end)), cities(2,bestOffsprings(j,2))], 'b-');
+%     drawnow;
+%     hold off;
+% end
 
 [cities] = [citiesLat'; citiesLon'];
-for j = 1:length(cors_mutation)
-    clf;
-    plot(214*x,300*y)
-    hold on
-    scatter(citiesLat,citiesLon,'Filled')
-    for k = 2:nCities
-        hold on
-        plot([cities(1,cors_mutation(j,k-1)), cities(1,cors_mutation(j,k))], ...
-            [cities(2,cors_mutation(j,k-1)), cities(2,cors_mutation(j,k))], 'b-');
-        drawnow;
-        pause(0.01);
-    end
-    plot([cities(1,cors_mutation(j,end)), cities(1,cors_mutation(j,1))], ...
-            [cities(2,cors_mutation(j,end)), cities(2,cors_mutation(j,1))], 'b-')
-    drawnow;
-    hold off;
-end
 
+clf;
+plot(214*x,300*y)
+hold on
+scatter(citiesLat,citiesLon,'Filled')
+for k = 3:nCities+1
+    hold on
+    plot([cities(1,bestOffsprings(end,k-1)), cities(1,bestOffsprings(end,k))], ...
+        [cities(2,bestOffsprings(end,k-1)), cities(2,bestOffsprings(end,k))], 'b-');
+    drawnow;
+    pause(0.01);
+end
+plot([cities(1,bestOffsprings(end,end)), cities(1,bestOffsprings(end,2))], ...
+    [cities(2,bestOffsprings(end,end)), cities(2,bestOffsprings(end,2))], 'b-');
+    drawnow;
+hold off;
+
+figure;
+plot(1:length(bestOffsprings), bestOffsprings(:,1));
 % Function definitions:
 % I
 function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities)
@@ -90,9 +123,9 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
         cros(2:2:end,i) = temp;
     end
     
-    disp(start)
-    disp(dl)
-    disp('----------')
+    %disp(start)
+    %disp(dl)
+    %disp('----------')
 
     T1 = [cros(1:2:end,1:start-1), zeros(length(cros(1:2:end,1)),length(start:start+dl)), cros(1:2:end,start+dl+1:end)];
     tablica = cell(length(T1), 1);
@@ -123,7 +156,7 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
             tablica2{k} = {};
         end
     end
-    disp(cros)
+    %disp(cros)
     for i = 1:length(tablica)
         for j = 1:length(tablica{i}(:))
             temp = cros(2.*i-1, tablica{i}(j));
@@ -134,9 +167,9 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
 end
 
 % IV
-function [cros_mutation] = mutation(cros, nCities)
+function [chromosome_mut] = mutation(cros, nCities)
     prob_m = 1/nCities;
-    cros_mutation = [];
+    chromosome_mut = [];
     rng('shuffle');
     for i = 1:length(cros)
         if rand() <= prob_m 
@@ -145,14 +178,14 @@ function [cros_mutation] = mutation(cros, nCities)
             while locus2 == locus1
                 locus2 = randi(nCities);
             end
-            disp([locus1, locus2])
+            %disp([locus1, locus2])
             temp = cros(i,locus1);
             cros(i,locus1) = cros(i,locus2);
             cros(i,locus2) = temp;
-            [cros_mutation] = [cros_mutation; cros(i,:)];
+            [chromosome_mut] = [chromosome_mut; cros(i,:)];
         else
-            disp('no mutation')
-            [cros_mutation] = [cros_mutation; cros(i,:)];
+            %disp('no mutation')
+            [chromosome_mut] = [chromosome_mut; cros(i,:)];
             continue
         end
     end
