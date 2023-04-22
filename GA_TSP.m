@@ -1,12 +1,18 @@
 close all; clc; clear;
 load('usborder.mat','x','y','xx','yy');
-nCities = 10;  % O(N^2)
+nCities = 11;  % O(N^2)
 citiesLat = zeros(nCities,1);
 citiesLon = citiesLat;
 order = 1:nCities;
 nPopulation = 20; % population size
-iterations = 5000;
+iterations = 200;
 
+% Check if number of cities is correct
+if nCities <= 2
+    error("Number of Cities must be greater than 2");
+end
+
+% Randomly generated location of cities
 n = 1;
 while (n <= nCities)
     xp = 299.*rand() + 1;
@@ -17,6 +23,11 @@ while (n <= nCities)
         n = n+1;
     end
 end
+
+% Predetermined location of cities
+% best = 856.9473025397323
+%citiesLat = [38.9690580717583; 84.2709674412475; 287.294543794855; 287.192917524641; 223.196607969350; 196.987889163089; 30.0424025895184; 208.753758269769; 132.184563537263; 56.8749087617592];
+%citiesLon = [274.099380985567; 164.517574242290; 289.501672024584; 146.127318968130; 118.275878840716; 52.1848196556570; 247.213890669861; 95.8127445381973; 115.085978670810; 147.439554340681];
 
 % generating an initial population
 chromosome = zeros(nPopulation, nCities);
@@ -44,6 +55,7 @@ for k=1:iterations
     [bestOffsprings] = [bestOffsprings; TEMP(min_index,:)];
 
 end
+
 
 [bestOffsprings] = sortrows(bestOffsprings, -1);
 
@@ -86,7 +98,10 @@ plot([cities(1,bestOffsprings(end,end)), cities(1,bestOffsprings(end,2))], ...
 hold off;
 
 figure;
-plot(1:length(bestOffsprings), bestOffsprings(:,1));
+plot(1:length(bestOffsprings), bestOffsprings(:,1), 'b-', 'LineWidth', 2);
+hold on
+plot(length(bestOffsprings), bestOffsprings(end,1), 'r.', 'MarkerSize', 10);
+
 % Function definitions:
 % I
 function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities)
@@ -127,9 +142,13 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
     %disp(dl)
     %disp('----------')
 
-    T1 = [cros(1:2:end,1:start-1), zeros(length(cros(1:2:end,1)),length(start:start+dl)), cros(1:2:end,start+dl+1:end)];
-    tablica = cell(length(T1), 1);
-    for k = 1:length(T1)
+    T1 = [cros(1:2:end,1:start-1), zeros(length(cros(1:2:end,1)), length(start:start+dl)), cros(1:2:end,start+dl+1:end)];
+    disp(size(T1))
+    disp(T1)
+    disp(length(T1))
+    tablica = cell(size(T1,1), 1);
+    % watch out: length(X) returns the length of the largest array dimension in X
+    for k = 1:size(T1,1)
         idx = [];
         for j = start:start+dl
             [idx] = [idx, find(T1(k,:) == cros(2.*k-1,j))];
@@ -143,8 +162,8 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
     end
 
     T2 = [cros(2:2:end,1:start-1), zeros(length(cros(2:2:end,1)),length(start:start+dl)), cros(2:2:end,start+dl+1:end)];
-    tablica2 = cell(length(T2), 1);
-    for k = 1:length(T2)
+    tablica2 = cell(size(T2,1), 1);
+    for k = 1:size(T2,1)
         idx2 = [];
         for j = start:start+dl
             [idx2] = [idx2, find(T2(k,:) == cros(2.*k,j))];
