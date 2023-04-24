@@ -1,12 +1,10 @@
 tic
 close all; clc; clear;
 load('usborder.mat','x','y','xx','yy');
-nCities = 10;  % O(N^2)
+nCities = 25;  % O(N^2)
 citiesLat = zeros(nCities,1);
 citiesLon = citiesLat;
-order = 1:nCities;
 nPopulation = 1000; % population size
-%iterations = 1000;
 
 % Check if number of cities is correct
 if nCities <= 2
@@ -33,43 +31,47 @@ end
 % generating an initial population
 chromosome = zeros(nPopulation, nCities);
 for i = 1:nPopulation
-    perm = randperm(length(order));
-    chromosome(i,:) = order(perm);
+    perm = randperm(nCities);
+    chromosome(i,:) = perm;  
 end
 
 [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities);
 [probability] = selection_probability(dist, nPopulation, chromosome);
-[bestOffsprings] = probability(end,2:end); % Best offspring from every iteration
+% Best offspring from every iteration
+[bestOffsprings] = probability(end,2:end); % Best offspring from initial generation
 
 lack_imp = 0;
 counter = 0;
 score = probability(end,2);
 
-while lack_imp < 1000
-     
+while lack_imp < 500 % it not necessarily go N times
+    
     mate = [];
     for i = 1:round(nPopulation/2) 
         [mate] = [mate; randsample(1:nPopulation, 2, true, probability(:,1))];
     end
-    
-    [cros, tablica, tablica2] = crossover(mate, probability, nCities);
+
+    [cros, tablica, tablica2] = crossover(mate, probability, nCities, bestOffsprings);
     [chromosome_mut] = mutation(cros, nCities);
     [dist] = objective_function(citiesLat, citiesLon, chromosome_mut, nPopulation, nCities);
+
     TEMP = [dist, chromosome_mut];
     [min_value, min_index] = min(TEMP(:,1));
     [bestOffsprings] = [bestOffsprings; TEMP(min_index,:)];
-    
 
+    [probability] = selection_probability(dist, nPopulation, chromosome_mut);
+    
+    
+    disp(score)
+    disp(bestOffsprings(end,1))
     if score < bestOffsprings(end,1) % lack of improvement
         lack_imp = lack_imp + 1;
         format long;
         disp(lack_imp)
-        disp(score)
-        disp(bestOffsprings(end,1))
     else  
-        if score - bestOffsprings(end,1) < 0.001 && counter == 3 
+        if counter == 10
             break
-        elseif score - bestOffsprings(end,1) < 0.001
+        elseif score - bestOffsprings(end,1) < 0.001 
             counter = counter + 1;
         end
         score = bestOffsprings(end,1);
@@ -77,30 +79,10 @@ while lack_imp < 1000
     end
 end
 
-%[bestOffsprings] = sortrows(bestOffsprings, -1);
+[bestOffsprings] = sortrows(bestOffsprings, -1);
 
 % Drawing lines between points
-% [cities] = [citiesLat'; citiesLon'];
-% for j = 1:length(bestOffsprings)
-%     clf;
-%     plot(214*x,300*y)
-%     hold on
-%     scatter(citiesLat,citiesLon,'Filled')
-%     for k = 3:nCities+1
-%         hold on
-%         plot([cities(1,bestOffsprings(j,k-1)), cities(1,bestOffsprings(j,k))], ...
-%             [cities(2,bestOffsprings(j,k-1)), cities(2,bestOffsprings(j,k))], 'b-');
-%         drawnow;
-%         pause(0.01);
-%     end
-%     plot([cities(1,bestOffsprings(j,end)), cities(1,bestOffsprings(j,2))], ...
-%             [cities(2,bestOffsprings(j,end)), cities(2,bestOffsprings(j,2))], 'b-');
-%     drawnow;
-%     hold off;
-% end
-
 [cities] = [citiesLat'; citiesLon'];
-
 clf;
 plot(214*x,300*y)
 hold on
@@ -124,7 +106,12 @@ ylabel('value of objective function for offspiring')
 hold on
 plot(size(bestOffsprings,1), bestOffsprings(end,1), 'r.', 'MarkerSize', 10);
 
+disp('Percentage of searching the state space:')
+disp([num2str(round(length(bestOffsprings)*100*100/factorial(nCities),5)) '%'])
+
 toc
+
+
 % Function definitions:
 % I
 function [dist] = objective_function(citiesLat, citiesLon, chromosome, nPopulation, nCities)
@@ -146,13 +133,16 @@ function [probability] = selection_probability(dist, nPopulation, chromosome)
 end
 
 % III
-function [cros, tablica, tablica2] = crossover(mate, probability, nCities)
+function [cros, tablica, tablica2] = crossover(mate, probability, nCities, bestOffsprings)
 
     cros = zeros(size(mate,1)*2, nCities);
     for i = 1:size(mate,1)
         cros((i-1)*2+1:i*2, :) = [probability(mate(i,1),3:end); probability(mate(i,2),3:end)];
-    end 
-    
+    end
+    % do nastepnej populacji przechodzi najepszy:
+    rng('shuffle');
+    cros(randi(size(cros,2)),:) = bestOffsprings(end,2:end);
+
     start = randi(nCities); % random start point
     dl = randi([0,nCities - start]); % random number of indexes to take, 0 or sth.
     for i = start:start+dl
@@ -207,6 +197,7 @@ end
 
 % IV
 function [chromosome_mut] = mutation(cros, nCities)
+
     prob_m = 1/nCities;
     chromosome_mut = [];
     rng('shuffle');
