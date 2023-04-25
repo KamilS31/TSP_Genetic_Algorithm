@@ -1,10 +1,9 @@
 tic
 close all; clc; clear;
-load('usborder.mat','x','y','xx','yy');
-nCities = 25;  % O(N^2)
-citiesLat = zeros(nCities,1);
-citiesLon = citiesLat;
-nPopulation = 1000; % population size
+
+load('usborder.mat','x','y');
+nCities = 100;  % O(N^2)
+nPopulation = 500; % population size
 
 % Check if number of cities is correct
 if nCities <= 2
@@ -12,21 +11,32 @@ if nCities <= 2
 end
 
 % Randomly generated location of cities
+citiesLat = zeros(nCities,1);
+citiesLon = citiesLat;
 n = 1;
 while (n <= nCities)
-    xp = 299.*rand() + 1;
-    yp = 299.*rand() + 1;
-    if inpolygon(xp,yp,214*x,300*y) % Test if inside the border
-        citiesLat(n) = xp;
-        citiesLon(n) = yp;
+    x_point = 299.*rand() + 1;
+    y_point = 299.*rand() + 1;
+    if inpolygon(x_point,y_point,214*x,300*y) % Test if inside the border
+        citiesLat(n) = x_point;
+        citiesLon(n) = y_point;
         n = n+1;
     end
 end
 
+
 % Predetermined location of cities
-% best = 856.9473025397323
-%citiesLat = [38.9690580717583; 84.2709674412475; 287.294543794855; 287.192917524641; 223.196607969350; 196.987889163089; 30.0424025895184; 208.753758269769; 132.184563537263; 56.8749087617592];
-%citiesLon = [274.099380985567; 164.517574242290; 289.501672024584; 146.127318968130; 118.275878840716; 52.1848196556570; 247.213890669861; 95.8127445381973; 115.085978670810; 147.439554340681];
+% best = 1173.6020807052705
+% citiesLat = [147.097255037233; 163.946552996298; 68.1776068040153; 38.2220966073422; 14.1449515079153; 131.439763983590; 204.896352790044; ...
+%             122.780804496441; 70.8742781216051; 69.4075876162935; 183.293773235291; 108.813428622198; 258.738114647446; 128.843646504298; ...
+%             74.3793072084819; 143.706484353342; 37.2563276313789; 209.572743876007; 192.058278041047; 242.656587639574; 182.430991857692; ...
+%             52.9424378203251; 131.323359065516; 175.837947846222; 244.832345837630; 194.777371154247; 271.632153331198; 129.124425212286; ...
+%             49.1480539376800; 150.430028618058];
+% citiesLon = [180.256744225672; 91.3534234940900; 197.343657214707; 153.058873492159; 215.591710331776; 236.090134189278; 125.018702954118; ...
+%             112.255029074254; 192.691665933279; 202.268176211748; 190.169386617769; 124.915461188450; 86.7874944957495; 69.4477471852106; ...
+%             243.017185149319; 210.168506582939; 246.438488501040; 86.7244641535839; 140.894722450234; 119.695129551657; 51.2782918074025; ...
+%             138.988969738223; 125.743079836118; 92.4902549966836; 152.083468775689; 218.069099491905; 234.216911095138; 142.106874588722; ...
+%             206.103330261466; 116.780288026215];
 
 % generating an initial population
 chromosome = zeros(nPopulation, nCities);
@@ -45,7 +55,6 @@ counter = 0;
 score = probability(end,2);
 
 while lack_imp < 500 % it not necessarily go N times
-    
     mate = [];
     for i = 1:round(nPopulation/2) 
         [mate] = [mate; randsample(1:nPopulation, 2, true, probability(:,1))];
@@ -69,7 +78,7 @@ while lack_imp < 500 % it not necessarily go N times
         format long;
         disp(lack_imp)
     else  
-        if counter == 10
+        if counter == 50
             break
         elseif score - bestOffsprings(end,1) < 0.001 
             counter = counter + 1;
@@ -87,6 +96,7 @@ clf;
 plot(214*x,300*y)
 hold on
 scatter(citiesLat,citiesLon,'Filled')
+scatter(citiesLat(bestOffsprings(end,2),:), citiesLon(bestOffsprings(end,2)),'Filled', 'green')
 for k = 3:nCities+1
     hold on
     plot([cities(1,bestOffsprings(end,k-1)), cities(1,bestOffsprings(end,k))], ...
@@ -104,10 +114,11 @@ plot(1:size(bestOffsprings,1), bestOffsprings(:,1), 'b-', 'LineWidth', 2);
 xlabel('Number of generations');
 ylabel('value of objective function for offspiring')
 hold on
-plot(size(bestOffsprings,1), bestOffsprings(end,1), 'r.', 'MarkerSize', 10);
+plot(size(bestOffsprings,1), bestOffsprings(end,1), 'rx', 'LineWidth', 1.5, 'MarkerSize', 8);
 
-disp('Percentage of searching the state space:')
-disp([num2str(round(length(bestOffsprings)*100*100/factorial(nCities),5)) '%'])
+disp(['Percentage of searching the state space: ', num2str(length(bestOffsprings)*100*100/factorial(nCities)) '%'])
+disp(['Shortest found route: ', num2str(bestOffsprings(end,1))])
+disp(' ')
 
 toc
 
@@ -139,7 +150,7 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities, bestO
     for i = 1:size(mate,1)
         cros((i-1)*2+1:i*2, :) = [probability(mate(i,1),3:end); probability(mate(i,2),3:end)];
     end
-    % do nastepnej populacji przechodzi najepszy:
+    % The best one to next generation:
     rng('shuffle');
     cros(randi(size(cros,2)),:) = bestOffsprings(end,2:end);
 
@@ -187,7 +198,7 @@ function [cros, tablica, tablica2] = crossover(mate, probability, nCities, bestO
     end
     %disp(cros)
     for i = 1:length(tablica)
-        for j = 1:length(tablica{i}(:))
+        for j = 1:numel(tablica{i}) % length(tablica{i}(:))
             temp = cros(2.*i-1, tablica{i}(j));
             cros(2.*i-1, tablica{i}(j)) = cros(2.*i, tablica2{i}(j));
             cros(2.*i, tablica2{i}(j)) = temp;
@@ -220,6 +231,7 @@ function [chromosome_mut] = mutation(cros, nCities)
         end
     end
 end
+
 
 
 
