@@ -168,5 +168,5 @@ The graph below shows the value of the objective function for the best individua
 
 ## Conclusion
 
-For the TSP problem, the genetic algorithm does a good job of finding optimal solutions even for a significant number of points. It is worth noting that for 1 to about 15 points it can find the most optimal solution by searching only up to 0.5 of all points. The efficiency decreases as the number of points increases, where the algorithm can get stuck in local minima. 
+For the TSP problem, the genetic algorithm does a good job of finding optimal solutions even for a significant number of points. It is worth noting that for 1 to about 15 points it can find the most optimal solution by searching only up to 0.5% of all points. The efficiency decreases as the number of points increases, where the algorithm can get stuck in local minima. 
 One of the key elements determining efficient performance is the correct selection of variables such as nPopulation, lack_imp or counter, the selection of which is made by observing the algorithm's work over a number of trials.
